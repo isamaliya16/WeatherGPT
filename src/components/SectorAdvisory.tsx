@@ -9,7 +9,10 @@ import {
   Sun,
   Shield,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Plane,
+  Compass,
+  Gauge
 } from 'lucide-react';
 import { SectorAdvisory, LocationPreset, WeatherData, IndianLanguage } from '../types';
 import { getTranslations } from '../services/weatherTranslations';
@@ -31,7 +34,7 @@ export const SectorAdvisoryView: React.FC<SectorAdvisoryProps> = ({
 }) => {
   const langCode = currentLanguage?.code || 'en';
   const t = getTranslations(langCode);
-  const [activeSector, setActiveSector] = useState<'agri' | 'marine' | 'health' | 'disaster'>('agri');
+  const [activeSector, setActiveSector] = useState<'agri' | 'marine' | 'aviation' | 'health' | 'disaster'>('agri');
 
   return (
     <div className="space-y-6 pb-12">
@@ -73,6 +76,18 @@ export const SectorAdvisoryView: React.FC<SectorAdvisoryProps> = ({
           >
             <Anchor className="w-4 h-4" />
             <span>{t.sectors.marine}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSector('aviation')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+              activeSector === 'aviation'
+                ? 'bg-sky-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Plane className="w-4 h-4" />
+            <span>Aviation & Drone</span>
           </button>
 
           <button
@@ -296,6 +311,105 @@ export const SectorAdvisoryView: React.FC<SectorAdvisoryProps> = ({
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>Wear light-colored, breathable cotton clothing and protect eyes and head.</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Aviation & UAV Drone Operations Panel */}
+      {activeSector === 'aviation' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wider text-sky-700 mb-2 flex items-center gap-1.5">
+                <Plane className="w-4 h-4" />
+                Aviation Flight Category
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-extrabold ${
+                  advisories.aviation?.flight_rules === 'VFR'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                    : advisories.aviation?.flight_rules === 'MVFR'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-300'
+                    : 'bg-rose-50 text-rose-700 border border-rose-300'
+                }`}>
+                  {advisories.aviation?.flight_rules || 'VFR'}
+                </span>
+                <span className="text-sm font-bold text-slate-800">
+                  {advisories.aviation?.flight_rules === 'VFR' ? 'Visual Flight Rules' : 'Instrument Rules'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600">
+                Visibility: {weather.visibility_km} km • Cloud Ceiling: {advisories.aviation?.ceiling_altitude_ft || 4200} ft AGL
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wider text-sky-700 mb-2 flex items-center gap-1.5">
+                <Compass className="w-4 h-4" />
+                Runway Crosswind Component
+              </div>
+              <div className="text-2xl font-black text-slate-900 mb-1 font-mono">
+                {advisories.aviation?.crosswind_component_knots || 6} <span className="text-xs font-normal text-slate-500">knots</span>
+              </div>
+              <p className="text-xs text-slate-600">
+                Runway 23/05 (Heading 230°) • Headwind: {advisories.aviation?.headwind_component_knots || 4} kts
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wider text-sky-700 mb-2 flex items-center gap-1.5">
+                <Gauge className="w-4 h-4" />
+                DGCA Drone Flyability
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                  advisories.aviation?.drone_flyability === 'Optimal'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {advisories.aviation?.drone_flyability || 'Optimal'}
+                </span>
+                <span className="text-xs text-slate-700 font-semibold">Green Airspace Zone</span>
+              </div>
+              <p className="text-xs text-slate-600">
+                Low shear • Turbulence: {advisories.aviation?.turbulence_risk || 'Light'}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <Plane className="w-4 h-4 text-sky-600" /> Encoded Aeronautical Reports (METAR / TAF)
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Standard ICAO format for aerodrome meteorological observation and aerodrome forecasts.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-2xl bg-slate-900 text-sky-300 font-mono text-xs space-y-1">
+                <span className="text-[10px] text-slate-400 font-sans uppercase font-bold block">Current METAR:</span>
+                <p className="tracking-wide break-all">{advisories.aviation?.metar_code || 'VABB 151200Z 24008KT 9999 FEW030 31/24 Q1010 NOSIG'}</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-900 text-emerald-300 font-mono text-xs space-y-1">
+                <span className="text-[10px] text-slate-400 font-sans uppercase font-bold block">Terminal Aerodrome Forecast (TAF):</span>
+                <p className="tracking-wide break-all">{advisories.aviation?.taf_code || 'TAF VABB 150900Z 1512/1618 25010KT 6000 SCT035'}</p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-slate-100">
+              <span className="text-slate-600 font-medium">
+                Density Altitude: {advisories.aviation?.density_altitude_ft || 1650} ft • Icing Level: {advisories.aviation?.icing_level_ft || 14000} ft
+              </span>
+              <button
+                onClick={() => onAskAi(`Explain aviation weather conditions and crosswind components for ${currentLocation.city}`)}
+                className="inline-flex items-center gap-1 text-xs font-bold text-sky-700 hover:text-sky-900 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Ask AI about runway & flight rules
+              </button>
             </div>
           </div>
         </div>

@@ -144,6 +144,65 @@ export interface SectorAdvisory {
     shelter_status: string;
     emergency_actions: string[];
   };
+  aviation: {
+    flight_rules: 'VFR' | 'MVFR' | 'IFR' | 'LIFR';
+    flight_rules_label: string;
+    visibility_meters: number;
+    cloud_ceiling_feet: number;
+    crosswind_component_knots: number;
+    primary_runway_heading: number;
+    runway_ident: string;
+    wind_shear_risk: 'None' | 'Low' | 'Moderate' | 'Severe';
+    icing_risk: 'None' | 'Light' | 'Moderate' | 'Severe';
+    drone_flyability: 'Optimal' | 'Caution' | 'Grounded';
+    drone_summary: string;
+    metar_code: string;
+    taf_bulletin: string;
+    sigmet_active: boolean;
+  };
+}
+
+export interface NowcastItem {
+  time_offset_min?: number;
+  time_offset?: string;
+  time_label?: string;
+  temp_c?: number;
+  precipitation_prob?: number;
+  rain_intensity_mm_hr?: number;
+  rain_type?: 'None' | 'Light Drizzle' | 'Moderate Rain' | 'Heavy Shower' | 'Severe Downpour';
+  radar_reflectivity_dbz: number;
+  storm_cell_drift_direction: string;
+  cloud_coverage_pct?: number;
+  gust_speed_kmh?: number;
+}
+
+export interface ExtendedForecastItem {
+  day_index: number;
+  date: string;
+  day_label?: string;
+  day_str?: string;
+  temp_max: number;
+  temp_min: number;
+  rainfall_probability?: number;
+  rainfall_expected_mm?: number;
+  synoptic_pattern: string;
+  confidence_index?: number;
+  temp_anomaly_vs_climatology?: number;
+}
+
+export type Extended15DayItem = ExtendedForecastItem;
+
+export interface MonsoonOutlook {
+  onset_status?: string;
+  monsoon_trough_position?: string;
+  enso_iod_phase?: 'El Niño Neutral' | 'La Niña Active' | 'Positive IOD' | 'Negative IOD' | string;
+  enso_phase?: string;
+  iod_status?: string;
+  narrative?: string;
+  confidence_pct?: number;
+  subseasonal_anomaly_pct?: number;
+  regional_outlook_summary?: string;
+  thirty_day_precipitation_trend: 'Above Normal' | 'Near Normal' | 'Deficit Expected' | string;
 }
 
 export interface HistoricalYearRecord {
@@ -193,7 +252,31 @@ export interface ForecastResponse {
   longitude: number;
   hourly: HourlyForecastItem[];
   daily: DailyForecastItem[];
+  nowcast?: NowcastItem[];
+  extended_15d?: ExtendedForecastItem[];
+  monsoon_outlook?: MonsoonOutlook;
   nwp: NWPComparison;
+}
+
+export interface RagSourceItem {
+  id: string;
+  title: string;
+  official_source: string;
+  bulletin_ref: string;
+  relevance_score: number;
+  content_snippet: string;
+}
+
+export interface IntentMetadata {
+  category: 'forecast' | 'alert' | 'advisory' | 'climate_history' | 'aviation';
+  time_horizon: 'nowcast_0_6h' | 'short_term_24h' | 'extended_7_15d' | 'monsoon_seasonal';
+  aspect: 'rain' | 'temperature' | 'wind' | 'spray' | 'irrigation' | 'aviation_flight' | 'cyclone_flood' | 'general';
+  confidence: number;
+  extracted_entities?: {
+    location?: string;
+    temporal?: string;
+    target_metric?: string;
+  };
 }
 
 export interface ChatMessage {
@@ -204,6 +287,9 @@ export interface ChatMessage {
   language_code?: string;
   is_voice?: boolean;
   detected_intent?: string;
+  intent_metadata?: IntentMetadata;
+  rag_sources?: RagSourceItem[];
+  bulletin_ref?: string;
   tool_invocations?: {
     tool: string;
     params: Record<string, any>;
@@ -215,6 +301,84 @@ export interface ChatMessage {
   alerts?: WeatherAlert[];
   advisory_snapshot?: Partial<SectorAdvisory>;
   is_audio_playing?: boolean;
+  feedback?: {
+    helpful?: boolean;
+    rating?: number;
+    comment?: string;
+    submitted_at?: string;
+  };
+}
+
+export interface TelemetryPacket {
+  station_id: string;
+  station_name: string;
+  network: 'IMD AWS' | 'ISRO ARG' | 'MoES Doppler S-Band' | 'INCOIS Buoy';
+  latitude: number;
+  longitude: number;
+  temperature_c: number;
+  relative_humidity_pct: number;
+  surface_pressure_hpa: number;
+  wind_speed_knots: number;
+  wind_dir_deg: number;
+  rain_rate_mm_hr: number;
+  solar_radiation_w_m2: number;
+  ingestion_latency_ms: number;
+  timestamp: string;
+  quality_flag: 'Verified (Level-1 QC)' | 'Suspect' | 'Raw';
+}
+
+export interface BenchmarkTestCase {
+  id: string;
+  name: string;
+  category: 'intent' | 'language_script' | 'rag_grounding' | 'extreme_alert' | 'agromet_compliance' | 'historical_retrieval';
+  query: string;
+  language_code: string;
+  expected_intent: string;
+  required_sources?: string[];
+  expected_ground_truth_contains: string[];
+  strict_script_range?: [number, number]; // Unicode range for Indic script verification
+  max_acceptable_latency_ms: number;
+}
+
+export interface BenchmarkResult {
+  test_id: string;
+  name: string;
+  category: string;
+  query: string;
+  language_code: string;
+  passed: boolean;
+  latency_ms: number;
+  script_fidelity_pass: boolean;
+  grounding_score: number; // 0 to 100
+  accuracy_score: number; // 0 to 100
+  actual_intent: string;
+  response_snippet: string;
+  notes: string;
+}
+
+export interface EvaluationReport {
+  timestamp: string;
+  total_tests: number;
+  passed_tests: number;
+  overall_accuracy_pct: number;
+  average_latency_ms: number;
+  rag_grounding_fidelity_pct: number;
+  indic_script_adherence_pct: number;
+  hallucination_rate_pct: number;
+  csat_score: number; // 1 to 5 scale
+  total_feedback_ratings: number;
+  results: BenchmarkResult[];
+}
+
+export type BenchmarkEvaluationReport = EvaluationReport;
+export type BenchmarkResultItem = BenchmarkResult;
+
+export interface TelemetryStreamStatus {
+  active_stations_count: number;
+  packets_received_total: number;
+  last_packet_timestamp: string;
+  stream_connected: boolean;
+  ingestion_rate_per_sec: number;
 }
 
 export interface LocationPreset {
@@ -222,6 +386,10 @@ export interface LocationPreset {
   city: string;
   state: string;
   district: string;
+  taluka?: string;
+  village?: string;
+  pincode?: string;
+  ward?: string;
   latitude: number;
   longitude: number;
   region_type: 'Agricultural Hub' | 'Coastal / Fishery' | 'Urban Metropolis' | 'Hilly / Flood Prone';

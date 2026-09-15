@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Thermometer,
   Droplets,
@@ -19,7 +19,11 @@ import {
   Sparkles,
   Info,
   MapPin,
-  Navigation
+  Navigation,
+  Radio,
+  Clock,
+  Calendar,
+  CloudRain
 } from 'lucide-react';
 import {
   WeatherData,
@@ -28,7 +32,10 @@ import {
   NWPComparison,
   SectorAdvisory,
   WeatherAlert,
-  IndianLanguage
+  IndianLanguage,
+  NowcastItem,
+  Extended15DayItem,
+  MonsoonOutlook
 } from '../types';
 import { getTranslations, translateCondition, getMetricLabels } from '../services/weatherTranslations';
 
@@ -36,6 +43,9 @@ interface DashboardProps {
   weather: WeatherData;
   hourly: HourlyForecastItem[];
   daily: DailyForecastItem[];
+  nowcast?: NowcastItem[];
+  extended_15d?: Extended15DayItem[];
+  monsoon_outlook?: MonsoonOutlook;
   nwp: NWPComparison;
   advisories: SectorAdvisory;
   alerts: WeatherAlert[];
@@ -51,6 +61,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   weather,
   hourly,
   daily,
+  nowcast = [],
+  extended_15d = [],
+  monsoon_outlook,
   nwp,
   advisories,
   alerts,
@@ -64,6 +77,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const t = getTranslations(currentLanguage.code);
   const labels = getMetricLabels(currentLanguage.code);
   const isRainLikely = weather.rain_probability >= 40;
+  const [forecastHorizon, setForecastHorizon] = useState<'7day' | 'nowcast' | '15day' | 'monsoon'>('7day');
 
   const getAqiBadge = (cat: string) => {
     switch (cat) {
@@ -462,54 +476,236 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* 7-Day Extended Forecast & NWP Multi-Model Convergence */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* 7-Day Forecast */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900">
-              {t.metrics.dailyForecast}
-            </h3>
-            <span className="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-semibold">
-              High-Res ECMWF & GFS
+      {/* Multi-Scale Forecasting Architecture & NWP Convergence */}
+      <div className="space-y-4">
+        {/* Multi-Scale Horizon Tabs */}
+        <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-emerald-600" /> Forecasting Scales:
             </span>
           </div>
 
-          <div className="space-y-2.5">
-            {daily.map((d, i) => (
-              <div
-                key={i}
-                className="p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100 border border-slate-200/70 flex items-center justify-between gap-3 text-xs transition-colors"
-              >
-                <div className="w-24 shrink-0 font-bold text-slate-800">
-                  {d.day_name}
-                </div>
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-2xl">
+            <button
+              onClick={() => setForecastHorizon('nowcast')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                forecastHorizon === 'nowcast'
+                  ? 'bg-white text-blue-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5 animate-pulse text-blue-600" />
+              <span>Nowcast (0-6h)</span>
+            </button>
 
-                <div className="flex-1 truncate text-slate-600 hidden sm:block">
-                  {translateCondition(d.condition, currentLanguage.code)}
-                </div>
+            <button
+              onClick={() => setForecastHorizon('7day')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                forecastHorizon === '7day'
+                  ? 'bg-white text-emerald-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+              <span>7-Day NWP</span>
+            </button>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Droplets className="w-3.5 h-3.5 text-blue-600" />
-                  <span className="font-bold text-blue-700 w-9 text-right">
-                    {d.rain_probability}%
-                  </span>
-                </div>
+            <button
+              onClick={() => setForecastHorizon('15day')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                forecastHorizon === '15day'
+                  ? 'bg-white text-purple-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-purple-600" />
+              <span>15-Day Synoptic</span>
+            </button>
 
-                <div className="flex items-center gap-2 shrink-0 font-mono">
-                  <span className="text-slate-500 font-medium">{d.temp_min}°</span>
-                  <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-amber-500"
-                      style={{ width: `${Math.min(100, Math.max(30, (d.temp_max - 20) * 4))}%` }}
-                    ></div>
-                  </div>
-                  <span className="font-bold text-slate-900">{d.temp_max}°</span>
-                </div>
-              </div>
-            ))}
+            <button
+              onClick={() => setForecastHorizon('monsoon')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                forecastHorizon === 'monsoon'
+                  ? 'bg-white text-amber-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <CloudRain className="w-3.5 h-3.5 text-amber-600" />
+              <span>30-Day Monsoon</span>
+            </button>
           </div>
         </div>
+
+        {/* Dynamic Horizon Content */}
+        {forecastHorizon === 'nowcast' && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Radio className="w-4 h-4 text-blue-600 animate-pulse" /> High-Resolution Radar Nowcasting (0–6 Hours)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Extrapolated in 30-minute steps from Doppler Radar (DWR) reflectivity sweeps and convective cell vectors.
+                </p>
+              </div>
+              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                X-Band DWR Ingested
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+              {nowcast.map((nc, idx) => (
+                <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                  <span className="text-xs font-extrabold text-slate-700 font-mono">{nc.time_offset}</span>
+                  <span className="text-lg font-black text-slate-900 my-1">{nc.temp_c}°C</span>
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mb-2">
+                    <div
+                      className={`h-full ${nc.radar_reflectivity_dbz > 35 ? 'bg-rose-500' : nc.radar_reflectivity_dbz > 20 ? 'bg-amber-500' : 'bg-blue-500'}`}
+                      style={{ width: `${Math.min(100, nc.radar_reflectivity_dbz * 2)}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-[11px] font-bold text-blue-700">{nc.precipitation_prob}% rain</span>
+                  <span className="text-[10px] text-slate-500 font-mono mt-0.5">Refl: {nc.radar_reflectivity_dbz} dBZ</span>
+                  <span className="text-[10px] text-slate-600 mt-0.5">Drift: {nc.storm_cell_drift_direction}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {forecastHorizon === '15day' && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-purple-600" /> 15-Day Extended Synoptic Outlook
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Ensemble synoptic weather pattern transitions and 30-year climatological baseline anomalies.
+                </p>
+              </div>
+              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                ECMWF EPS + GEFS Ensemble
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {extended_15d.slice(0, 10).map((ext, idx) => (
+                <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between font-bold text-slate-900 mb-1">
+                      <span>{ext.day_str}</span>
+                      <span className="font-mono text-slate-500">{ext.date.substring(5)}</span>
+                    </div>
+                    <div className="text-base font-extrabold text-slate-900">
+                      {ext.temp_min}°C — {ext.temp_max}°C
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-1 line-clamp-2">{ext.synoptic_pattern}</p>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Anomaly:</span>
+                    <span className={`font-bold ${ext.temp_anomaly_vs_climatology >= 0 ? 'text-amber-600' : 'text-blue-600'}`}>
+                      {ext.temp_anomaly_vs_climatology >= 0 ? `+${ext.temp_anomaly_vs_climatology}` : ext.temp_anomaly_vs_climatology}°C
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {forecastHorizon === 'monsoon' && monsoon_outlook && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <CloudRain className="w-4 h-4 text-amber-600" /> 30-Day Sub-Seasonal Monsoon & Teleconnection Outlook
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Coupled atmospheric-oceanic model projections integrating ENSO, Indian Ocean Dipole (IOD), and MJO.
+                </p>
+              </div>
+              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                IMD-IITM Monsoon Mission CFS
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <span className="text-xs text-slate-500 block uppercase font-bold">ENSO Oceanic Index:</span>
+                <span className="text-lg font-extrabold text-slate-900 mt-1 block">{monsoon_outlook.enso_phase}</span>
+                <p className="text-xs text-slate-600 mt-1">Favorable neutral-to-cool anomaly across Nino 3.4 region.</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <span className="text-xs text-slate-500 block uppercase font-bold">Indian Ocean Dipole (IOD):</span>
+                <span className="text-lg font-extrabold text-emerald-700 mt-1 block">{monsoon_outlook.iod_status}</span>
+                <p className="text-xs text-slate-600 mt-1">Warm western equatorial basin supporting monsoon surges.</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <span className="text-xs text-slate-500 block uppercase font-bold">30-Day Rainfall Trend:</span>
+                <span className="text-lg font-extrabold text-blue-700 mt-1 block">{monsoon_outlook.thirty_day_precipitation_trend}</span>
+                <p className="text-xs text-slate-600 mt-1">Confidence Rating: {monsoon_outlook.confidence_pct}%</p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900">
+              <span className="font-bold">Agricultural Monsoon Narrative: </span>
+              {monsoon_outlook.narrative}
+            </div>
+          </div>
+        )}
+
+        {/* 7-Day Forecast & NWP Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* 7-Day Forecast */}
+          <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-slate-900">
+                {t.metrics.dailyForecast}
+              </h3>
+              <span className="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-semibold">
+                High-Res ECMWF & GFS
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {daily.map((d, i) => (
+                <div
+                  key={i}
+                  className="p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100 border border-slate-200/70 flex items-center justify-between gap-3 text-xs transition-colors"
+                >
+                  <div className="w-24 shrink-0 font-bold text-slate-800">
+                    {d.day_name}
+                  </div>
+
+                  <div className="flex-1 truncate text-slate-600 hidden sm:block">
+                    {translateCondition(d.condition, currentLanguage.code)}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Droplets className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="font-bold text-blue-700 w-9 text-right">
+                      {d.rain_probability}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 font-mono">
+                    <span className="text-slate-500 font-medium">{d.temp_min}°</span>
+                    <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-amber-500"
+                        style={{ width: `${Math.min(100, Math.max(30, (d.temp_max - 20) * 4))}%` }}
+                      ></div>
+                    </div>
+                    <span className="font-bold text-slate-900">{d.temp_max}°</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
         {/* NWP Numerical Weather Prediction Comparison Matrix */}
         <div className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm flex flex-col justify-between">
@@ -561,5 +757,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
     </div>
+  </div>
   );
 };

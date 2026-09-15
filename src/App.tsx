@@ -516,6 +516,9 @@ export default function App() {
                 weather={weatherData}
                 hourly={forecastData.hourly}
                 daily={forecastData.daily}
+                nowcast={forecastData.nowcast}
+                extended_15d={forecastData.extended_15d}
+                monsoon_outlook={forecastData.monsoon_outlook}
                 nwp={forecastData.nwp}
                 advisories={advisories}
                 alerts={alerts}
