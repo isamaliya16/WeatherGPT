@@ -1,0 +1,7 @@
+{
+  "name": "WeatherNova",
+  "description": "Conversational AI for weather forecasting, alerts, climate intelligence, and sector-specific decision support across 22+ Indian languages.",
+  "requestFramePermissions": ["geolocation", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
